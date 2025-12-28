@@ -14,6 +14,7 @@
 #include "effect.h"
 
 extern ADC_HandleTypeDef hadc1;
+extern TIM_HandleTypeDef htim2;
 
 // --- Biến cho xử lý âm thanh ---
 uint16_t adc_buffer[FFT_SAMPLES];       // Buffer chứa dữ liệu thô từ Mic (DMA nạp vào đây)
@@ -38,6 +39,8 @@ void process_audio_data(void);
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
 
 void audio_init(void) {
+	// Bắt đầu Timer 2 (để tạo nhịp)
+	HAL_TIM_Base_Start(&htim2);
     arm_rfft_fast_init_f32(&fft_handler, FFT_SAMPLES);
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, FFT_SAMPLES);
 }
