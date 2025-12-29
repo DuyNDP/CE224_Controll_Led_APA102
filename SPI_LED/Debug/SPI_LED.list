@@ -4945,51 +4945,52 @@ static void MX_USART6_Init(void)
  80028c6:	4b11      	ldr	r3, [pc, #68]	@ (800290c <MX_USART6_Init+0x50>)
  80028c8:	4a12      	ldr	r2, [pc, #72]	@ (8002914 <MX_USART6_Init+0x58>)
  80028ca:	605a      	str	r2, [r3, #4]
-  husart6.Init.WordLength = USART_WORDLENGTH_9B;
+  husart6.Init.WordLength = USART_WORDLENGTH_8B;
  80028cc:	4b0f      	ldr	r3, [pc, #60]	@ (800290c <MX_USART6_Init+0x50>)
- 80028ce:	f44f 5280 	mov.w	r2, #4096	@ 0x1000
- 80028d2:	609a      	str	r2, [r3, #8]
+ 80028ce:	2200      	movs	r2, #0
+ 80028d0:	609a      	str	r2, [r3, #8]
   husart6.Init.StopBits = USART_STOPBITS_1;
- 80028d4:	4b0d      	ldr	r3, [pc, #52]	@ (800290c <MX_USART6_Init+0x50>)
- 80028d6:	2200      	movs	r2, #0
- 80028d8:	60da      	str	r2, [r3, #12]
+ 80028d2:	4b0e      	ldr	r3, [pc, #56]	@ (800290c <MX_USART6_Init+0x50>)
+ 80028d4:	2200      	movs	r2, #0
+ 80028d6:	60da      	str	r2, [r3, #12]
   husart6.Init.Parity = USART_PARITY_NONE;
- 80028da:	4b0c      	ldr	r3, [pc, #48]	@ (800290c <MX_USART6_Init+0x50>)
- 80028dc:	2200      	movs	r2, #0
- 80028de:	611a      	str	r2, [r3, #16]
+ 80028d8:	4b0c      	ldr	r3, [pc, #48]	@ (800290c <MX_USART6_Init+0x50>)
+ 80028da:	2200      	movs	r2, #0
+ 80028dc:	611a      	str	r2, [r3, #16]
   husart6.Init.Mode = USART_MODE_TX;
- 80028e0:	4b0a      	ldr	r3, [pc, #40]	@ (800290c <MX_USART6_Init+0x50>)
- 80028e2:	2208      	movs	r2, #8
- 80028e4:	615a      	str	r2, [r3, #20]
+ 80028de:	4b0b      	ldr	r3, [pc, #44]	@ (800290c <MX_USART6_Init+0x50>)
+ 80028e0:	2208      	movs	r2, #8
+ 80028e2:	615a      	str	r2, [r3, #20]
   husart6.Init.CLKPolarity = USART_POLARITY_LOW;
- 80028e6:	4b09      	ldr	r3, [pc, #36]	@ (800290c <MX_USART6_Init+0x50>)
- 80028e8:	2200      	movs	r2, #0
- 80028ea:	619a      	str	r2, [r3, #24]
+ 80028e4:	4b09      	ldr	r3, [pc, #36]	@ (800290c <MX_USART6_Init+0x50>)
+ 80028e6:	2200      	movs	r2, #0
+ 80028e8:	619a      	str	r2, [r3, #24]
   husart6.Init.CLKPhase = USART_PHASE_1EDGE;
- 80028ec:	4b07      	ldr	r3, [pc, #28]	@ (800290c <MX_USART6_Init+0x50>)
- 80028ee:	2200      	movs	r2, #0
- 80028f0:	61da      	str	r2, [r3, #28]
+ 80028ea:	4b08      	ldr	r3, [pc, #32]	@ (800290c <MX_USART6_Init+0x50>)
+ 80028ec:	2200      	movs	r2, #0
+ 80028ee:	61da      	str	r2, [r3, #28]
   husart6.Init.CLKLastBit = USART_LASTBIT_DISABLE;
- 80028f2:	4b06      	ldr	r3, [pc, #24]	@ (800290c <MX_USART6_Init+0x50>)
- 80028f4:	2200      	movs	r2, #0
- 80028f6:	621a      	str	r2, [r3, #32]
+ 80028f0:	4b06      	ldr	r3, [pc, #24]	@ (800290c <MX_USART6_Init+0x50>)
+ 80028f2:	2200      	movs	r2, #0
+ 80028f4:	621a      	str	r2, [r3, #32]
   if (HAL_USART_Init(&husart6) != HAL_OK)
- 80028f8:	4804      	ldr	r0, [pc, #16]	@ (800290c <MX_USART6_Init+0x50>)
- 80028fa:	f004 fca3 	bl	8007244 <HAL_USART_Init>
- 80028fe:	4603      	mov	r3, r0
- 8002900:	2b00      	cmp	r3, #0
- 8002902:	d001      	beq.n	8002908 <MX_USART6_Init+0x4c>
+ 80028f6:	4805      	ldr	r0, [pc, #20]	@ (800290c <MX_USART6_Init+0x50>)
+ 80028f8:	f004 fca4 	bl	8007244 <HAL_USART_Init>
+ 80028fc:	4603      	mov	r3, r0
+ 80028fe:	2b00      	cmp	r3, #0
+ 8002900:	d001      	beq.n	8002906 <MX_USART6_Init+0x4a>
   {
     Error_Handler();
- 8002904:	f000 f8d2 	bl	8002aac <Error_Handler>
+ 8002902:	f000 f8d3 	bl	8002aac <Error_Handler>
   }
   /* USER CODE BEGIN USART6_Init 2 */
 
   /* USER CODE END USART6_Init 2 */
 
 }
- 8002908:	bf00      	nop
- 800290a:	bd80      	pop	{r7, pc}
+ 8002906:	bf00      	nop
+ 8002908:	bd80      	pop	{r7, pc}
+ 800290a:	bf00      	nop
  800290c:	20001d3c 	.word	0x20001d3c
  8002910:	40011400 	.word	0x40011400
  8002914:	00280de8 	.word	0x00280de8

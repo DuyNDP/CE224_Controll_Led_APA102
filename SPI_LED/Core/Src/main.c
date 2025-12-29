@@ -507,7 +507,7 @@ static void MX_USART6_Init(void)
   /* USER CODE END USART6_Init 1 */
   husart6.Instance = USART6;
   husart6.Init.BaudRate = 2625000;
-  husart6.Init.WordLength = USART_WORDLENGTH_9B;
+  husart6.Init.WordLength = USART_WORDLENGTH_8B;
   husart6.Init.StopBits = USART_STOPBITS_1;
   husart6.Init.Parity = USART_PARITY_NONE;
   husart6.Init.Mode = USART_MODE_TX;
