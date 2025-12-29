@@ -6,7 +6,6 @@
 #define INC_BLUETOOTH_H_
 
 #include "main.h"
-#include "effect.h"
 
 extern UART_HandleTypeDef huart2;
 

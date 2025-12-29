@@ -9,6 +9,9 @@
 #include <math.h>
 #include "SPI_LED.h"
 #include "UART_LED.h"
+#include "FFT.h"
+#include "knob.h"
+#include "button.h"
 
 // --- ĐỊNH NGHĨA ---
 #define STRIP_SPI  0
@@ -21,6 +24,8 @@ float smoothed_val = 0.0f;
 extern volatile uint8_t effect_mode_spi;
 extern volatile uint8_t effect_mode_uart;
 extern volatile uint32_t brightness;
+extern float audio_peak_val;
+extern float audio_peak_hz;
 
 // Buffer trạng thái
 static uint16_t rain_hues[NUM_LEDS];
@@ -38,7 +43,10 @@ void effect_rainbow_pulse(float vol, uint8_t strip_type);
 void effect_music_rain(float vol, float hz, uint8_t strip_type);
 void effect_fire(float vol, uint8_t strip_type);
 void effect_center_pulse(float vol, float hz, uint8_t strip_type);
-void led_effects_manager(float raw_vol, float raw_hz);
+void process_audio_data(void);
+void brightness_update(void);
+void button_scan(void);
+void led_effects_manager(void);
 void led_init();
 void perform_system_reset(void);
 
@@ -250,12 +258,17 @@ void effect_center_pulse(float vol, float hz, uint8_t strip_type) {
 // 3. TRÌNH QUẢN LÝ (MANAGER)
 // ============================================================
 
-void led_effects_manager(float raw_vol, float raw_hz) {
+void led_effects_manager(void) {
+	process_audio_data();
+	brightness_update();
+	button_scan();
+	float raw_vol = audio_peak_val;
+	float raw_hz = audio_peak_hz;
     smoothed_val = (smoothed_val * 0.6f) + (raw_vol * 0.4f);
 
     // ================= XỬ LÝ DÂY SPI =================
     switch (effect_mode_spi) {
-        case 0: effect_breathing(STRIP_SPI); break; // Sử dụng hàm mới
+        case 0: effect_breathing(STRIP_SPI); break;
         case 1: effect_vu_meter_smart(smoothed_val, raw_hz, STRIP_SPI); break;
         case 2: effect_freq_color(smoothed_val, raw_hz, STRIP_SPI); break;
         case 3: effect_rainbow_pulse(smoothed_val, STRIP_SPI); break;
@@ -267,18 +280,16 @@ void led_effects_manager(float raw_vol, float raw_hz) {
     }
 
     // ================= XỬ LÝ DÂY USART =================
-    if (effect_mode_spi != 7 && effect_mode_spi != 8) {
-        switch (effect_mode_uart) {
-            case 0: effect_breathing(STRIP_UART); break; // Sử dụng hàm mới
-            case 1: effect_vu_meter_smart(smoothed_val, raw_hz, STRIP_UART); break;
-            case 2: effect_freq_color(smoothed_val, raw_hz, STRIP_UART); break;
-            case 3: effect_rainbow_pulse(smoothed_val, STRIP_UART); break;
-            case 4: effect_music_rain(smoothed_val, raw_hz, STRIP_UART); break;
-            case 5: effect_fire(smoothed_val, STRIP_UART); break;
-            case 6: effect_center_pulse(smoothed_val, raw_hz, STRIP_UART); break;
-            case MODE_OFF: effect_clear(STRIP_UART); break;
-            default: effect_breathing(STRIP_UART); break;
-        }
+    switch (effect_mode_uart) {
+    	case 0: effect_breathing(STRIP_UART); break;
+        case 1: effect_vu_meter_smart(smoothed_val, raw_hz, STRIP_UART); break;
+        case 2: effect_freq_color(smoothed_val, raw_hz, STRIP_UART); break;
+        case 3: effect_rainbow_pulse(smoothed_val, STRIP_UART); break;
+        case 4: effect_music_rain(smoothed_val, raw_hz, STRIP_UART); break;
+        case 5: effect_fire(smoothed_val, STRIP_UART); break;
+        case 6: effect_center_pulse(smoothed_val, raw_hz, STRIP_UART); break;
+        case MODE_OFF: effect_clear(STRIP_UART); break;
+        default: effect_breathing(STRIP_UART); break;
     }
     update_all_strips();
 }
@@ -290,8 +301,6 @@ void led_init() {
 }
 
 // Hàm Reset hệ thống:
-// Nếu muốn Reset cũng "thở" thì có thể dùng biến đếm trong main,
-// nhưng để đơn giản thì tắt 3s là an toàn nhất.
 void perform_system_reset(void) {
     effect_mode_spi = 99;
     effect_mode_uart = 99;

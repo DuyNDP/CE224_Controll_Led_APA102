@@ -21,11 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "FFT.h"
 #include "effect.h"
-#include "button.h"
 #include "bluetooth.h"
-#include "knob.h"
 
 /* USER CODE END Includes */
 
@@ -128,37 +125,7 @@ int main(void)
   audio_init();
   bluetooth_init();
   knob_init();
-
-  HAL_Delay(1000);
-
-    // 2. Đọc trạng thái thực tế của nút và GÁN THẲNG vào trạng thái cũ
-    // Việc này "đánh lừa" hàm button_scan rằng nút đã ở trạng thái này từ trước
-    // Cần include "button.h" và truy cập vào struct btn_spi, btn_uart
-
-    // Nút SPI
-    if (HAL_GPIO_ReadPin(BTN_SPI_PORT, BTN_SPI_PIN) == GPIO_PIN_SET) {
-        btn_spi.last_state = 1; // Nếu đang bị giữ hoặc nhiễu mức 1, coi như đã biết
-        btn_spi.is_pressed = 1; // Đánh dấu là đang nhấn để không trigger event
-    } else {
-        btn_spi.last_state = 0;
-        btn_spi.is_pressed = 0;
-    }
-
-    // Nút UART
-    if (HAL_GPIO_ReadPin(BTN_UART_PORT, BTN_UART_PIN) == GPIO_PIN_SET) {
-        btn_uart.last_state = 1;
-        btn_uart.is_pressed = 1;
-    } else {
-        btn_uart.last_state = 0;
-        btn_uart.is_pressed = 0;
-    }
-
-    // 3. Reset cứng biến Mode về 0 lần cuối cùng
-    effect_mode_spi = 0;
-    effect_mode_uart = 0;
-
-    check_system_reset_cause();
-
+  button_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -166,10 +133,8 @@ int main(void)
   // Biến dùng để đếm thời gian tự chuyển hiệu ứng
   while (1)
   {
-	  brightness_update();
 	  bluetooth_check_connection();
-	  process_audio_data();
-	  button_scan();
+      led_effects_manager();
 	  HAL_Delay(1);
   }
     /* USER CODE END WHILE */
