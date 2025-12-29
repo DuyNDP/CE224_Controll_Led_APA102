@@ -1,6 +1,5 @@
 /*
  * bluetooth.h
- * Cập nhật: Thêm tính năng báo đèn trạng thái kết nối
  */
 
 #ifndef INC_BLUETOOTH_H_
@@ -11,9 +10,6 @@
 
 extern UART_HandleTypeDef huart2;
 
-// --- ĐỊNH NGHĨA CHÂN (Phải khớp với CubeMX) ---
-// Nếu bạn đặt User Label trong CubeMX là BT_STATE và LED_D2 thì main.h đã tự có
-// Nếu chưa, hãy định nghĩa thủ công ở đây:
 #ifndef BT_STATE_PIN
 #define BT_STATE_PIN  GPIO_PIN_4
 #define BT_STATE_PORT GPIOC
