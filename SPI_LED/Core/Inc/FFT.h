@@ -90,7 +90,7 @@ void process_audio_data(void) {
 
         // Xử lý Tần số (HZ): Tính theo công thức chuẩn và cắt trần
         float final_hz = (float)max_index * (SAMPLING_RATE / (float)FFT_SAMPLES);
-        if (final_hz > TARGET_MAX_HZ) final_hz = TARGET_MAX_HZ; // Cắt nếu vượt 100k
+        if (final_hz > TARGET_MAX_HZ) final_hz = TARGET_MAX_HZ;
         audio_peak_val = final_val;
         audio_peak_hz  = final_hz;
 

@@ -193,7 +193,6 @@ void effect_fire(float vol, uint8_t strip_type) {
     }
 
     // 2. Drifting (Bốc hơi nhiệt từ dưới lên trên)
-    // SỬA: Chạy về tới 2 để nối liền với nguồn lửa ở 0 và 1
     for (int i = NUM_LEDS - 1; i >= 2; i--) {
         // Công thức trung bình cộng để làm mượt chuyển động
         fire_heat[i] = (fire_heat[i - 1] + fire_heat[i - 2] + fire_heat[i - 2]) / 3;
@@ -215,7 +214,6 @@ void effect_fire(float vol, uint8_t strip_type) {
         uint8_t r, g, b;
         uint8_t heat = fire_heat[i];
 
-        // SỬA QUAN TRỌNG:
         // Dùng chính 'heat' làm độ sáng (Value) cho hàm hsv_to_rgb
         // Điều này giúp ngọn lửa tắt dần tự nhiên ở phía trên
 

@@ -35,8 +35,7 @@ void bluetooth_check_connection(void) {
     if (HAL_GPIO_ReadPin(BT_STATE_PORT, BT_STATE_PIN) == GPIO_PIN_SET) {
         // HC-05 báo mức 1 -> ĐÃ KẾT NỐI
 
-        // Bật đèn D2 (Lưu ý: Board STM32 thường là Active LOW, tức ghi 0 là sáng)
-        // Nếu board bạn ghi 1 là sáng thì đổi thành GPIO_PIN_SET
+        // Bật đèn D2
         HAL_GPIO_WritePin(LED_D2_PORT, LED_D2_PIN, GPIO_PIN_RESET);
     }
     else {

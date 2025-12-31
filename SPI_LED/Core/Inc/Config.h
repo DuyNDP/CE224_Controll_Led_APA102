@@ -28,6 +28,6 @@
 #define MAG_SCALE_FACTOR 35.0f
 
 // --- CẤU HÌNH LED ---
-#define LED_UPDATE_INTERVAL 10  // Thời gian update LED: 500ms
+#define LED_UPDATE_INTERVAL 10  // Thời gian update LED: 10ms
 
 #endif /* INC_CONFIG_H_ */
