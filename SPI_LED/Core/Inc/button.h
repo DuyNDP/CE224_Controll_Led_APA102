@@ -36,8 +36,41 @@ typedef struct {
 Button_t btn_spi =  {BTN_SPI_PORT,  BTN_SPI_PIN,  0, 0, 0};
 Button_t btn_uart = {BTN_UART_PORT, BTN_UART_PIN, 0, 0, 0};
 
+void button_init(void);
+void check_system_reset_cause(void);
+void button_scan(void);
+
+void button_init(void) {
+	HAL_Delay(1000);
+
+	// 2. Đọc trạng thái thực tế của nút và GÁN THẲNG vào trạng thái cũ
+	// Nút SPI
+	if (HAL_GPIO_ReadPin(BTN_SPI_PORT, BTN_SPI_PIN) == GPIO_PIN_SET) {
+		btn_spi.last_state = 1; // Nếu đang bị giữ hoặc nhiễu mức 1, coi như đã biết
+	    btn_spi.is_pressed = 1; // Đánh dấu là đang nhấn để không trigger event
+	} else {
+		btn_spi.last_state = 0;
+		btn_spi.is_pressed = 0;
+	}
+
+    // Nút UART
+	if (HAL_GPIO_ReadPin(BTN_UART_PORT, BTN_UART_PIN) == GPIO_PIN_SET) {
+		btn_uart.last_state = 1;
+		btn_uart.is_pressed = 1;
+	} else {
+		btn_uart.last_state = 0;
+		btn_uart.is_pressed = 0;
+	}
+
+    // 3. Reset cứng biến Mode về 0 lần cuối cùng
+	effect_mode_spi = 0;
+	effect_mode_uart = 0;
+
+	check_system_reset_cause();
+}
+
 // ============================================================
-// HÀM MỚI: KIỂM TRA NGUYÊN NHÂN RESET (Gọi 1 lần ở setup)
+// KIỂM TRA NGUYÊN NHÂN RESET
 // ============================================================
 void check_system_reset_cause(void) {
     // Kiểm tra cờ Reset do chân NRST (Nút cứng) hoặc POR (Cắm điện)
@@ -56,7 +89,7 @@ void check_system_reset_cause(void) {
 }
 
 // ============================================================
-// HÀM QUÉT NÚT (Gọi liên tục trong while(1))
+// HÀM QUÉT NÚT
 // ============================================================
 void button_scan(void) {
     uint32_t current_time = HAL_GetTick();

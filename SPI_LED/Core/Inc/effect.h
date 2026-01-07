@@ -9,6 +9,9 @@
 #include <math.h>
 #include "SPI_LED.h"
 #include "UART_LED.h"
+#include "FFT.h"
+#include "knob.h"
+#include "button.h"
 
 // --- ĐỊNH NGHĨA ---
 #define STRIP_SPI  0
@@ -21,11 +24,31 @@ float smoothed_val = 0.0f;
 extern volatile uint8_t effect_mode_spi;
 extern volatile uint8_t effect_mode_uart;
 extern volatile uint32_t brightness;
+extern float audio_peak_val;
+extern float audio_peak_hz;
 
 // Buffer trạng thái
 static uint16_t rain_hues[NUM_LEDS];
 static uint8_t  rain_vals[NUM_LEDS];
 static uint8_t  fire_heat[NUM_LEDS];
+
+void update_all_strips(void);
+void set_strip_color(uint8_t strip_type, uint16_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t brightness);
+void hsv_to_rgb(uint16_t h, uint8_t s, uint8_t v, uint8_t *r, uint8_t *g, uint8_t *b);
+void effect_clear(uint8_t strip_type);
+void effect_breathing(uint8_t strip_type);
+void effect_vu_meter_smart(float vol, float hz, uint8_t strip_type);
+void effect_freq_color(float vol, float hz, uint8_t strip_type);
+void effect_rainbow_pulse(float vol, uint8_t strip_type);
+void effect_music_rain(float vol, float hz, uint8_t strip_type);
+void effect_fire(float vol, uint8_t strip_type);
+void effect_center_pulse(float vol, float hz, uint8_t strip_type);
+void process_audio_data(void);
+void brightness_update(void);
+void button_scan(void);
+void led_effects_manager(void);
+void led_init();
+void perform_system_reset(void);
 
 // ============================================================
 // 1. CÁC HÀM CƠ BẢN
@@ -36,7 +59,7 @@ void update_all_strips(void) {
     usart_update();
 }
 
-void set_pixel_color(uint8_t strip_type, uint16_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) {
+void set_strip_color(uint8_t strip_type, uint16_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) {
     if (strip_type == STRIP_SPI) spi_set_led(index, r, g, b, brightness);
     else usart_set_led(index, r, g, b, brightness);
 }
@@ -58,7 +81,7 @@ void hsv_to_rgb(uint16_t h, uint8_t s, uint8_t v, uint8_t *r, uint8_t *g, uint8_
 }
 
 void effect_clear(uint8_t strip_type) {
-    for (int i = 0; i < NUM_LEDS; i++) set_pixel_color(strip_type, i, 0, 0, 0, 0);
+    for (int i = 0; i < NUM_LEDS; i++) set_strip_color(strip_type, i, 0, 0, 0, 0);
 }
 
 // ============================================================
@@ -93,7 +116,7 @@ void effect_breathing(uint8_t strip_type) {
     for (int i = 0; i < NUM_LEDS; i++) {
         // Lưu ý: Tham số cuối cùng giữ nguyên biến 'brightness' toàn cục (mức trần)
         // Việc Fade in/out đã được xử lý bên trong r, g, b rồi.
-        set_pixel_color(strip_type, i, r, g, b, brightness);
+        set_strip_color(strip_type, i, r, g, b, brightness);
     }
 }
 // 1. Smart VU Meter
@@ -106,8 +129,8 @@ void effect_vu_meter_smart(float vol, float hz, uint8_t strip_type) {
     hsv_to_rgb(hue, 255, 255, &r, &g, &b);
 
     for (int i = 0; i < NUM_LEDS; i++) {
-        if (i < height) set_pixel_color(strip_type, i, r, g, b, brightness);
-        else set_pixel_color(strip_type, i, 0, 0, 0, 0);
+        if (i < height) set_strip_color(strip_type, i, r, g, b, brightness);
+        else set_strip_color(strip_type, i, 0, 0, 0, 0);
     }
 }
 
@@ -122,8 +145,8 @@ void effect_freq_color(float vol, float hz, uint8_t strip_type) {
 
     for (int i = 0; i < NUM_LEDS; i++) {
         if (i >= (center - width) && i <= (center + width))
-             set_pixel_color(strip_type, i, r, g, b, brightness);
-        else set_pixel_color(strip_type, i, 0, 0, 0, 0);
+             set_strip_color(strip_type, i, r, g, b, brightness);
+        else set_strip_color(strip_type, i, 0, 0, 0, 0);
     }
 }
 
@@ -137,7 +160,7 @@ void effect_rainbow_pulse(float vol, uint8_t strip_type) {
     uint8_t dyn_bright = (uint8_t)((vol / TARGET_MAX_VAL) * brightness);
     if (dyn_bright > brightness) dyn_bright = brightness;
 
-    for (int i = 0; i < NUM_LEDS; i++) set_pixel_color(strip_type, i, r, g, b, dyn_bright);
+    for (int i = 0; i < NUM_LEDS; i++) set_strip_color(strip_type, i, r, g, b, dyn_bright);
 }
 
 // 4. Music Rain
@@ -154,8 +177,8 @@ void effect_music_rain(float vol, float hz, uint8_t strip_type) {
     for (int i = 0; i < NUM_LEDS; i++) {
         if (rain_vals[i] > 0) {
             hsv_to_rgb(rain_hues[i], 255, 255, &r, &g, &b);
-            set_pixel_color(strip_type, i, r, g, b, rain_vals[i]);
-        } else set_pixel_color(strip_type, i, 0, 0, 0, 0);
+            set_strip_color(strip_type, i, r, g, b, rain_vals[i]);
+        } else set_strip_color(strip_type, i, 0, 0, 0, 0);
     }
 }
 
@@ -170,7 +193,6 @@ void effect_fire(float vol, uint8_t strip_type) {
     }
 
     // 2. Drifting (Bốc hơi nhiệt từ dưới lên trên)
-    // SỬA: Chạy về tới 2 để nối liền với nguồn lửa ở 0 và 1
     for (int i = NUM_LEDS - 1; i >= 2; i--) {
         // Công thức trung bình cộng để làm mượt chuyển động
         fire_heat[i] = (fire_heat[i - 1] + fire_heat[i - 2] + fire_heat[i - 2]) / 3;
@@ -192,7 +214,6 @@ void effect_fire(float vol, uint8_t strip_type) {
         uint8_t r, g, b;
         uint8_t heat = fire_heat[i];
 
-        // SỬA QUAN TRỌNG:
         // Dùng chính 'heat' làm độ sáng (Value) cho hàm hsv_to_rgb
         // Điều này giúp ngọn lửa tắt dần tự nhiên ở phía trên
 
@@ -215,7 +236,7 @@ void effect_fire(float vol, uint8_t strip_type) {
 
         // Set màu ra LED
         // brightness: Biến toàn cục chỉnh độ sáng tổng (Dimmer)
-        set_pixel_color(strip_type, i, r, g, b, brightness);
+        set_strip_color(strip_type, i, r, g, b, brightness);
     }
 }
 
@@ -227,20 +248,25 @@ void effect_center_pulse(float vol, float hz, uint8_t strip_type) {
     uint8_t r, g, b;
     hsv_to_rgb(hue, 255, 255, &r, &g, &b);
     for (int i = 0; i < NUM_LEDS; i++) {
-        if (abs(i - center) < len) set_pixel_color(strip_type, i, r, g, b, brightness);
-        else set_pixel_color(strip_type, i, 0, 0, 0, 0);
+        if (abs(i - center) < len) set_strip_color(strip_type, i, r, g, b, brightness);
+        else set_strip_color(strip_type, i, 0, 0, 0, 0);
     }
 }
 // ============================================================
 // 3. TRÌNH QUẢN LÝ (MANAGER)
 // ============================================================
 
-void led_effects_manager(float raw_vol, float raw_hz) {
+void led_effects_manager(void) {
+	process_audio_data();
+	brightness_update();
+	button_scan();
+	float raw_vol = audio_peak_val;
+	float raw_hz = audio_peak_hz;
     smoothed_val = (smoothed_val * 0.6f) + (raw_vol * 0.4f);
 
     // ================= XỬ LÝ DÂY SPI =================
     switch (effect_mode_spi) {
-        case 0: effect_breathing(STRIP_SPI); break; // Sử dụng hàm mới
+        case 0: effect_breathing(STRIP_SPI); break;
         case 1: effect_vu_meter_smart(smoothed_val, raw_hz, STRIP_SPI); break;
         case 2: effect_freq_color(smoothed_val, raw_hz, STRIP_SPI); break;
         case 3: effect_rainbow_pulse(smoothed_val, STRIP_SPI); break;
@@ -252,39 +278,33 @@ void led_effects_manager(float raw_vol, float raw_hz) {
     }
 
     // ================= XỬ LÝ DÂY USART =================
-    if (effect_mode_spi != 7 && effect_mode_spi != 8) {
-        switch (effect_mode_uart) {
-            case 0: effect_breathing(STRIP_UART); break; // Sử dụng hàm mới
-            case 1: effect_vu_meter_smart(smoothed_val, raw_hz, STRIP_UART); break;
-            case 2: effect_freq_color(smoothed_val, raw_hz, STRIP_UART); break;
-            case 3: effect_rainbow_pulse(smoothed_val, STRIP_UART); break;
-            case 4: effect_music_rain(smoothed_val, raw_hz, STRIP_UART); break;
-            case 5: effect_fire(smoothed_val, STRIP_UART); break;
-            case 6: effect_center_pulse(smoothed_val, raw_hz, STRIP_UART); break;
-            case MODE_OFF: effect_clear(STRIP_UART); break;
-            default: effect_breathing(STRIP_UART); break;
-        }
+    switch (effect_mode_uart) {
+    	case 0: effect_breathing(STRIP_UART); break;
+        case 1: effect_vu_meter_smart(smoothed_val, raw_hz, STRIP_UART); break;
+        case 2: effect_freq_color(smoothed_val, raw_hz, STRIP_UART); break;
+        case 3: effect_rainbow_pulse(smoothed_val, STRIP_UART); break;
+        case 4: effect_music_rain(smoothed_val, raw_hz, STRIP_UART); break;
+        case 5: effect_fire(smoothed_val, STRIP_UART); break;
+        case 6: effect_center_pulse(smoothed_val, raw_hz, STRIP_UART); break;
+        case MODE_OFF: effect_clear(STRIP_UART); break;
+        default: effect_breathing(STRIP_UART); break;
     }
     update_all_strips();
 }
 
 void led_init() {
-    for (int i = 0; i < BUFFER_SIZE; i++) {
-        spi_led_buffer[i] = 0x00;
-        usart_led_buffer[i] = 0x00;
-    }
+    usart_init_buffer();
+    spi_init_buffer();
     update_all_strips();
 }
 
 // Hàm Reset hệ thống:
-// Nếu muốn Reset cũng "thở" thì có thể dùng biến đếm trong main,
-// nhưng để đơn giản thì tắt 3s là an toàn nhất.
 void perform_system_reset(void) {
     effect_mode_spi = 99;
     effect_mode_uart = 99;
 
-    effect_clear(0);
-    effect_clear(1);
+    effect_clear(STRIP_SPI);
+    effect_clear(STRIP_UART);
     update_all_strips();
     HAL_Delay(3000);
 

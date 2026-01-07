@@ -47,6 +47,8 @@
 <body>
     <h1>STM32 CONTROL HUB</h1>
 
+    <audio id="audio-connected" src="connected.mp3" preload="auto"></audio>
+
     <div class="status-bar">
         <div id="status-text"><span class="status-dot"></span>Disconnected</div>
         <button id="btn-connect" onclick="connectSerial()"><i class="fa-brands fa-bluetooth-b"></i> Connect</button>
@@ -89,8 +91,6 @@
     </div>
     
     <script>
-        // ... (Giữ nguyên phần script cũ) ...
-        // Chỉ cần chép lại phần script từ câu trả lời trước
         let port, writer, reader, keepReading = false;
 
         async function connectSerial() {
@@ -107,13 +107,26 @@
                     port.readable.pipeTo(textDecoder.writable);
                     reader = textDecoder.readable.getReader();
 
+                    // --- CẬP NHẬT GIAO DIỆN ---
                     document.querySelector('.status-bar').classList.add('connected');
                     document.getElementById('status-text').innerHTML = '<span class="status-dot"></span>System Online';
                     document.getElementById('btn-connect').style.display = 'none';
 
+                    // --- [PHẦN MỚI 2] PHÁT ÂM THANH KẾT NỐI ---
+                    playConnectedSound(); 
+
                     keepReading = true; readLoop();
                 } catch (err) { console.error(err); alert("Failed to connect."); }
             } else { alert("Browser not supported."); }
+        }
+
+        // --- [PHẦN MỚI 3] HÀM PHÁT ÂM THANH ---
+        function playConnectedSound() {
+            const audio = document.getElementById("audio-connected");
+            if(audio) {
+                audio.volume = 1.0; // Âm lượng tối đa
+                audio.play().catch(e => console.log("Audio play blocked: ", e));
+            }
         }
 
         async function readLoop() {
